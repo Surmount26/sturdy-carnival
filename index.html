@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>颜色计算器 - 专业颜色分析工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: white;
+            color: #333;
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .tab.active {
+            color: #333;
+            background: white;
+            border-bottom-color: #ff6b9d;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            border-left: 3px solid #ff6b9d;
+            padding-left: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #ff6b9d;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #ff6b9d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: #ff5a8a;
+        }
+
+        .btn-secondary {
+            background: #999;
+        }
+
+        .btn-secondary:hover {
+            background: #777;
+        }
+
+        .color-preview {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 20px auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .color-info {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.1em;
+        }
+
+        .color-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .color-swatch {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .color-inputs {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .color-inputs input {
+            width: 80px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+
+        .result-box {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #e0e0e0;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #333;
+        }
+
+        .result-item h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .result-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .result-item .status {
+            margin-top: 10px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .status.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+
+        .file-upload:hover {
+            border-color: #999;
+            background: #f5f5f5;
+        }
+
+        .file-upload.dragover {
+            border-color: #333;
+            background: #f0f0f0;
+        }
+
+        .analysis-result {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+            line-height: 1.8;
+            border: 1px solid #e0e0e0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .tab-content > .section > div[style*="grid-template-columns: 1fr 1fr 1.5fr"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-wrap: nowrap;
+            }
+            
+            .tab {
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+        }
+
+        .lab-input-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .tolerance-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .result-table th {
+            background: #ff6b9d;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .result-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .result-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .formula-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .delta-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .spectral-tab {
+            transition: all 0.2s;
+        }
+
+        .spectral-tab:hover {
+            color: #333;
+        }
+
+        .spectral-tab-content {
+            display: block;
+        }
+
+        /* 模态框样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            margin: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-close-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .modal-close-btn:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            padding: 8px 10px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            transform: translate(-50%, -120%);
+            white-space: nowrap;
+            z-index: 10;
+            display: none;
+        }
+
+        .chart-type-btn {
+            width: 34px;
+            height: 32px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .chart-type-btn.active {
+            border-color: #ff6b9d;
+            color: #ff6b9d;
+            background: #fff4f8;
+        }
+
+        /* 样品行透明度滑块样式 */
+        .sample-opacity-slider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #eee;
+        }
+        .sample-opacity-slider label {
+            font-size: 0.75em;
+            color: #666;
+            white-space: nowrap;
+        }
+        .sample-opacity-slider input[type="range"] {
+            flex: 1;
+            height: 4px;
+            cursor: pointer;
+        }
+        .sample-opacity-slider span {
+            font-size: 0.75em;
+            color: #666;
+            width: 30px;
+            text-align: right;
+        }
+        .sample-opacity-slider input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        #spectralChartZoom {
+            width: 800px !important;
+            height: 500px !important;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+
+    <!-- Three.js 核心库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls 控制器 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>颜色计算器</h1>
+            <p>专业的颜色分析工具 - CIE色品图、CIE Lab色域图、色差计算、光谱反射率</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">CIE xy 色品图</button>
+            <button class="tab" onclick="switchTab(1)">CIE Lab 色域图</button>
+            <button class="tab" onclick="switchTab(2)">色差计算</button>
+            <button class="tab" onclick="switchTab(3)">光谱反射率</button>
+        </div>
+
+        <!-- CIE xy 色品图 -->
+        <div class="tab-content active" id="tab0">
+            <div class="section">
+                <h2 class="section-title">CIE xy 色品图</h2>
+                <p>根据CIE 1931 XYZ光谱三刺激值绘制标准色品图，并分析样品轨迹</p>
+
+                <!-- 手动输入样品XYZ -->
+                <div style="background: #fafafa; padding: 20px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1em;">手动输入样品 XYZ 三刺激值</h3>
+                    <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
+                        <!-- 样品1 -->
+                        <div style="flex: 0 0 auto; text-align: center;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">样品1</div>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">X</label>
+                                    <input type="number" id="sample1X" step="0.01" placeholder="X" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Y</label>
+                                    <input type="number" id="sample1Y" step="0.01" placeholder="Y" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Z</label>
+                                    <input type="number" id="sample1Z" step="0.01" placeholder="Z" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                            </div>
+                            <div id="sample1XYZError" style="display: none; color: #ff0000; font-size: 11px; margin-top: 5px; min-height: 16px;"></div>
+                            <div id="sampleBlock1" style="width: 60px; height: 60px; border: 2px solid #333; border-radius: 8px; background: #f0f0f0; margin: 10px auto 0;"></div>
+                        </div>
+                        <!-- 样品2 -->
+                        <div style="flex: 0 0 auto; text-align: center;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">样品2</div>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">X</label>
+                                    <input type="number" id="sample2X" step="0.01" placeholder="X" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Y</label>
+                                    <input type="number" id="sample2Y" step="0.01" placeholder="Y" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Z</label>
+                                    <input type="number" id="sample2Z" step="0.01" placeholder="Z" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                            </div>
+                            <div id="sample2XYZError" style="display: none; color: #ff0000; font-size: 11px; margin-top: 5px; min-height: 16px;"></div>
+                            <div id="sampleBlock2" style="width: 60px; height: 60px; border: 2px solid #333; border-radius: 8px; background: #f0f0f0; margin: 10px auto 0;"></div>
+                        </div>
+                        <!-- 样品3 -->
+                        <div style="flex: 0 0 auto; text-align: center;">
+                            <div style="font-weight: 600; margin-bottom: 8px;">样品3</div>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">X</label>
+                                    <input type="number" id="sample3X" step="0.01" placeholder="X" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Y</label>
+                                    <input type="number" id="sample3Y" step="0.01" placeholder="Y" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 3px; font-weight: 500; font-size: 0.9em;">Z</label>
+                                    <input type="number" id="sample3Z" step="0.01" placeholder="Z" style="width: 70px; padding: 8px; border: 2px solid #ddd; border-radius: 6px; text-align: center;" onchange="onManualSampleXYZChange()">
+                                </div>
+                            </div>
+                            <div id="sample3XYZError" style="display: none; color: #ff0000; font-size: 11px; margin-top: 5px; min-height: 16px;"></div>
+                            <div id="sampleBlock3" style="width: 60px; height: 60px; border: 2px solid #333; border-radius: 8px; background: #f0f0f0; margin: 10px auto 0;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="file-upload" id="excelUpload" onclick="document.getElementById('excelFileInput').click()">
+                    <p>点击或拖拽Excel文件到此处</p>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">支持 .xlsx, .xls 格式</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelFile(event)">
+                </div>
+
+                <div class="canvas-container">
+                    <div id="chromaticityTooltip" class="chart-tooltip"></div>
+                    <canvas id="chromaticityCanvas" width="800" height="600"></canvas>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CIE Lab 色域图 -->
+        <div class="tab-content" id="tab1">
+            <div class="section">
+                <h2 class="section-title">CIE Lab 色域图</h2>
+                <p>三维CIE Lab色域可视化与样品对比分析</p>
+
+                <!-- 主布局：左控制面板 + 右3D画布 -->
+                <div style="display: grid; grid-template-columns: 400px 1fr; gap: 20px; margin-top: 20px; align-items: start;">
+
+                    <!-- 左侧控制面板 -->
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0; max-height: 85vh; overflow-y: auto;">
+
+                        <!-- 1. 白点选择 -->
+                        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
+                            <h3 style="margin-bottom: 10px; font-size: 1em;">参考白点</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn" id="btnD50" onclick="setIlluminant('D50')" style="flex: 1; background: #ff6b9d;">D50</button>
+                                <button class="btn btn-secondary" id="btnD65" onclick="setIlluminant('D65')" style="flex: 1;">D65</button>
+                            </div>
+                            <p id="illuminantInfo" style="font-size: 0.85em; color: #666; margin-top: 8px;">当前：D50 (Xn=96.42, Yn=100, Zn=82.52)</p>
+                        </div>
+
+                        <!-- 2. 样品数据 -->
+                        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
+                            <h3 style="margin-bottom: 10px; font-size: 1em;">样品数据</h3>
+
+                            <!-- 批量导入 -->
+                            <div>
+                                <div class="file-upload" id="lab3dExcelUpload" onclick="document.getElementById('lab3dExcelFileInput').click()" style="padding: 12px; background: white;">
+                                    <p style="font-size: 0.85em; margin: 5px 0; font-weight: 600;">导入Lab数据 (Excel/CSV)</p>
+                                    <p style="font-size: 0.8em; color: #666;">格式：样品名, 样品1 L*, 样品1 a*, 样品1 b*, 样品2 L*, 样品2 a*, 样品2 b*...</p>
+                                    <input type="file" id="lab3dExcelFileInput" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleLab3dExcelFile(event)">
+                                </div>
+                            </div>
+
+                            <!-- 样品列表（控制面板） -->
+                            <div id="samplesContainer" style="margin-top: 15px;"></div>
+                        </div>
+
+                        <!-- 3. 样品色域控制 -->
+                        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
+                            <h3 style="margin-bottom: 10px; font-size: 1em;">样品色域样式</h3>
+                            <div>
+                                <label style="font-size: 0.9em; display: block; margin-bottom: 5px;">全局透明度: <span id="sampleOpacityValue">80</span>%</label>
+                                <input type="range" id="sampleOpacity" min="0" max="100" value="80" oninput="updateSampleOpacityLabel(); updateAllSampleStyles()" style="width: 100%; cursor: pointer;">
+                            </div>
+                        </div>
+
+                        <!-- 5. 操作按钮 -->
+                        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                            <button class="btn" onclick="resetCameraView()" style="width: 100%; margin-bottom: 10px; background: #2196F3; color: white;">视角复位</button>
+                            <button class="btn" onclick="exportHighResImage()" style="width: 100%; background: #FF9800; color: white;">导出4K图片</button>
+                        </div>
+
+                    </div>
+
+                    <!-- 右侧3D渲染区 -->
+                    <div style="position: relative; background: white; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; min-height: 600px;">
+                        <div id="lab3dTooltip" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 8px 12px; border-radius: 4px; font-size: 0.85em; display: none; z-index: 100; pointer-events: none;"></div>
+                        <div id="lab3dLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1.2em;">加载中...</div>
+                        <canvas id="lab3dCanvas" width="800" height="600" style="display: block; width: 100%; height: 100%;"></canvas>
+                    </div>
+
+                </div>
+
+                <!-- 样品列表（底部） -->
+                <div id="samplesListPanel" style="margin-top: 20px; padding: 15px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; display: none;">
+                    <h3 style="margin-bottom: 10px; font-size: 1em;">样品列表</h3>
+                    <div id="samplesListContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 色差计算 -->
+        <div class="tab-content" id="tab2">
+            <div class="section">
+                <h2 class="section-title">色差计算</h2>
+                <p>输入标准LAB值和样品LAB值，使用多种色差公式计算色差</p>
+                
+                <!-- Excel导入区域 -->
+                <div style="background: #fafafa; padding: 20px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1em; color: #333;">从Excel批量导入LAB数据</h3>
+                    <div class="file-upload" id="labExcelUpload" onclick="document.getElementById('labExcelFileInput').click()" style="background: white;">
+                        <p>点击或拖拽Excel文件到此处</p>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">支持 .xlsx, .xls 格式</p>
+                        <p style="font-size: 0.85em; color: #888; margin-top: 5px;">
+                            格式1：标准Lab值（L*, a*, b*）+ 多个样品Lab值（L*, a*, b*）<br>
+                            格式2：每行包含标准值和样品值（标准L*, 标准a*, 标准b*, 样品L*, 样品a*, 样品b*）
+                        </p>
+                        <input type="file" id="labExcelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleLABExcelFile(event)">
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="clearBatchResults()" style="margin-right: 10px;">清空批量结果</button>
+                        <button class="btn" onclick="exportBatchResults()" id="exportBtn" style="display: none;">导出批量结果</button>
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 15px;">输入参数</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px; font-size: 0.95em;">标准Lab值</h4>
+                            <div class="lab-input-group">
+                                <div class="input-group">
+                                    <label>L*</label>
+                                    <input type="number" id="stdL" step="0.01" placeholder="0-100" onchange="updateColorSwatches()">
+                                </div>
+                                <div class="input-group">
+                                    <label>a*</label>
+                                    <input type="number" id="stdA" step="0.01" placeholder="-128到127" onchange="updateColorSwatches()">
+                                </div>
+                                <div class="input-group">
+                                    <label>b*</label>
+                                    <input type="number" id="stdB" step="0.01" placeholder="-128到127" onchange="updateColorSwatches()">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px; font-size: 0.95em;">样品Lab值</h4>
+                            <div class="lab-input-group">
+                                <div class="input-group">
+                                    <label>L*</label>
+                                    <input type="number" id="samL" step="0.01" placeholder="0-100" onchange="updateColorSwatches()">
+                                </div>
+                                <div class="input-group">
+                                    <label>a*</label>
+                                    <input type="number" id="samA" step="0.01" placeholder="-128到127" onchange="updateColorSwatches()">
+                                </div>
+                                <div class="input-group">
+                                    <label>b*</label>
+                                    <input type="number" id="samB" step="0.01" placeholder="-128到127" onchange="updateColorSwatches()">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group" style="margin-bottom: 15px;">
+                            <label>DHM (Delta Hues Measurement)</label>
+                            <select id="dhmSelect" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                                <option value="visual">视觉艺术</option>
+                                <option value="textile">纺织</option>
+                                <option value="graphic">图形设计</option>
+                                <option value="paint">涂料</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group" style="margin-bottom: 15px;">
+                            <label>CMC (l:c) 权重系数</label>
+                            <input type="text" id="decmcCoeff" value="1:1" placeholder="例如: 1:1 或 2:1">
+                        </div>
+                        
+                        <button class="btn" onclick="calculateColorDifference()" style="width: 100%; margin-top: 20px;">计算色差</button>
+                    </div>
+                    
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 15px;">转换结果</h3>
+                        
+                        <div style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: center;">
+                            <div style="text-align: center;">
+                                <div style="width: 80px; height: 80px; border: 2px solid #333; border-radius: 8px; margin: 0 auto 10px; background: #ffffff;" id="standardColorSwatch"></div>
+                                <div style="font-weight: 600;">标准颜色</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="width: 80px; height: 80px; border: 2px solid #333; border-radius: 8px; margin: 0 auto 10px; background: #ffffff;" id="sampleColorSwatch"></div>
+                                <div style="font-weight: 600;">样品颜色</div>
+                            </div>
+                        </div>
+                        
+                        <div id="differenceResults"></div>
+                    </div>
+                </div>
+                
+                <!-- 批量计算结果 -->
+                <div id="batchResults" style="display: none; margin-top: 30px;">
+                    <h3 class="section-title">批量计算结果</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="result-table" id="batchResultsTable">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>标准Lab值</th>
+                                    <th>样品Lab值</th>
+                                    <th>ΔE*ab</th>
+                                    <th>ΔE*94</th>
+                                    <th>ΔE*CMC</th>
+                                    <th>ΔE*00</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchResultsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 光谱反射率 -->
+        <div class="tab-content" id="tab3">
+            <div class="section">
+                <h2 class="section-title">光谱反射率计算</h2>
+                <p>导入或输入光谱反射率数据，绘制曲线并计算XYZ、LAB值</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; margin-top: 20px;">
+                    <!-- 左侧：输入区域 -->
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 15px; font-size: 1.1em;">请输入光谱反射率</h3>
+                        
+                        <!-- 标签页 -->
+                        <div style="display: flex; border-bottom: 1px solid #e0e0e0; margin-bottom: 15px;">
+                            <button class="spectral-tab active" onclick="switchSpectralTab(0)" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid #ff6b9d; color: #333; font-weight: 600; cursor: pointer;">转换QTX</button>
+                            <button class="spectral-tab" onclick="switchSpectralTab(1)" style="flex: 1; padding: 10px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #666; cursor: pointer;">光谱数据</button>
+                        </div>
+                        
+                        <div id="spectralTab0" class="spectral-tab-content">
+                            <div style="margin-bottom: 15px;">
+                                <label style="font-weight: 600; display: block; margin-bottom: 5px;">样品1 反射率</label>
+                                <textarea id="reflectanceInput1" rows="5" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-family: monospace; resize: vertical;" placeholder="输入反射率值，用逗号或换行分隔"></textarea>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="font-weight: 600; display: block; margin-bottom: 5px;">样品2 反射率</label>
+                                <textarea id="reflectanceInput2" rows="5" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-family: monospace; resize: vertical;" placeholder="输入反射率值，用逗号或换行分隔"></textarea>
+                            </div>
+                            
+                            <div class="input-group" style="margin-bottom: 15px;">
+                                <label>波长范围 (nm)</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" id="wlStart" value="380" style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 4px;">
+                                    <span>-</span>
+                                    <input type="number" id="wlEnd" value="780" style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </div>
+                            
+                            <button class="btn" onclick="plotManualSpectral()" style="width: 100%; margin-bottom: 15px; background: #ff6b9d;">计算并绘制</button>
+                            
+                            <p style="text-align: center; color: #999; font-size: 0.85em; margin-top: 10px;">或切换到"光谱数据"标签页上传文件</p>
+                        </div>
+                        
+                        <div id="spectralTab1" class="spectral-tab-content" style="display: none;">
+                            <div class="file-upload" id="spectralUpload" style="margin-bottom: 15px; padding: 15px;" onclick="document.getElementById('spectralFileInput').click()">
+                                <p style="font-size: 0.9em; margin: 5px 0; font-weight: 600;">点击此处上传光谱数据文件</p>
+                                <p style="font-size: 0.85em; margin: 5px 0; color: #666;">支持格式：.xlsx, .xls, .csv, .qtx</p>
+                                <p style="font-size: 0.8em; margin: 5px 0; color: #888;">Excel文件需包含"波长"和"反射率"列（或前两列为数据）</p>
+                                <input type="file" id="spectralFileInput" accept=".xlsx,.xls,.csv,.qtx" style="display: none;" onchange="handleSpectralFile(event)">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>波长范围 (nm)</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" id="wlStart" value="380" style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 4px;">
+                                    <span>-</span>
+                                    <input type="number" id="wlEnd" value="780" style="flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 中间：色彩数据 -->
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 15px; font-size: 1.1em;">色彩数据</h3>
+                        
+                        <!-- 颜色块展示 -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <div id="colorBlock1" style="flex: 1; height: 80px; border: 2px solid #ddd; border-radius: 4px; background: #f0f0f0; display: none;"></div>
+                            <div id="colorBlock2" style="flex: 1; height: 80px; border: 2px solid #ddd; border-radius: 4px; background: #f0f0f0; display: none;"></div>
+                        </div>
+                        
+                        <div id="spectralResults" style="display: none;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600; width: 80px;">样品1</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600; color: #666; width: 60px;">XYZ</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace; font-size: 0.9em;" id="xyzValues1">-</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600;"></td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600; color: #666;">Lab</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace; font-size: 0.9em;" id="labValues1">-</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600; width: 80px;">样品2</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: 600; color: #666; width: 60px;">XYZ</td>
+                                    <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace; font-size: 0.9em;" id="xyzValues2">-</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; font-weight: 600;"></td>
+                                    <td style="padding: 8px; font-weight: 600; color: #666;">Lab</td>
+                                    <td style="padding: 8px; font-family: monospace; font-size: 0.9em;" id="labValues2">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div id="spectralResultsPlaceholder" style="color: #999; text-align: center; padding: 40px 0;">
+                            请输入数据并点击转换
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：光谱曲线图 -->
+                    <div style="background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="font-size: 1.1em; margin: 0;">光谱曲线图</h3>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="chartTypeLine" class="chart-type-btn active" onclick="switchSpectralChartMode('line')" title="折线图">📈</button>
+                                <button id="chartTypeBar" class="chart-type-btn" onclick="switchSpectralChartMode('bar')" title="柱状图">📊</button>
+                                <button onclick="zoomSpectralChart()" style="width: 32px; height: 32px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'" title="放大查看">🔍</button>
+                                <button onclick="showSpectralDataTable()" style="width: 32px; height: 32px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'" title="数据视图">📊</button>
+                                <button onclick="downloadSpectralChart()" style="width: 32px; height: 32px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='white'" title="下载图表">⬇️</button>
+                            </div>
+                        </div>
+                        <div style="position: relative; width: 100%; height: 300px;">
+                            <canvas id="spectralChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 光谱图表放大模态框 -->
+    <div id="spectralZoomModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1.2em;">光谱曲线图 - 放大视图</h3>
+                <button onclick="closeSpectralZoom()" class="modal-close-btn" title="关闭">×</button>
+            </div>
+            <div style="position: relative; width: 800px; height: 500px; min-width: 800px; min-height: 500px;">
+                <canvas id="spectralChartZoom" style="width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 光谱数据表格模态框 -->
+    <div id="spectralDataModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1.2em;">光谱数据表格</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button onclick="exportSpectralData()" class="btn" style="padding: 8px 15px; font-size: 0.9em;">导出Excel</button>
+                    <button onclick="closeSpectralDataTable()" class="modal-close-btn" title="关闭">×</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto; max-height: 70vh;">
+                <table id="spectralDataTable" class="result-table">
+                    <thead>
+                        <tr>
+                            <th>样品</th>
+                            <th>波长 (nm)</th>
+                            <th>反射率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="spectralDataTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="color-cal.js"></script>
+</body>
+</html>
